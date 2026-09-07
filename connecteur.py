@@ -161,6 +161,13 @@ async def chercher_prix(
             except Exception:
                 ref_confirmee = False  # pas trouvé -> on ne peut pas garantir
 
+        if not ref_confirmee:
+            return ResultatPrix(
+                site=nom, ref_demandee=recherche, prix=None, devise="EUR",
+                url_produit=href, ref_confirmee=False,
+                erreur="Référence de la fiche différente de la recherche",
+            )
+
         # extraire le prix
         selecteurs_prix = [site_config["selecteur_prix_fiche"]]
         selecteur_secours = site_config.get("selecteur_prix_fiche_secours")
