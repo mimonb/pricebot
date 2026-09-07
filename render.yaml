@@ -3,7 +3,7 @@ services:
     name: pricebot
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt && playwright install --with-deps chromium
+    buildCommand: pip install -r requirements.txt && python -m playwright install chromium
     startCommand: gunicorn --bind 0.0.0.0:$PORT --timeout 180 web:app
     envVars:
       - key: PYTHON_VERSION
