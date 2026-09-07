@@ -3,8 +3,10 @@ services:
     name: pricebot
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt && python -m playwright install chromium
+    buildCommand: pip install -r requirements.txt && PLAYWRIGHT_BROWSERS_PATH=0 python -m playwright install chromium
     startCommand: gunicorn --bind 0.0.0.0:$PORT --timeout 180 web:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.8
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: "0"
