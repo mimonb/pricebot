@@ -25,7 +25,8 @@ sites:
     selecteur_resultat: "article.product-miniature.js-product-miniature"
     selecteur_lien: "a.card-img-top"
     attendre_selecteur: "article.product-miniature.js-product-miniature"
-    selecteur_prix_fiche: ".product-prices .text-accent"
+    selecteur_prix_fiche: "meta[property='product:price:amount']"
+    selecteur_prix_fiche_secours: ".product-prices .text-accent"
     selecteur_ref_fiche: ".list-unstyled li:nth-child(2) .text-right"
     timeout_navigation_ms: 60000
     timeout_selecteur_ms: 45000

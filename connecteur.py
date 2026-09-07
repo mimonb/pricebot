@@ -183,8 +183,11 @@ async def chercher_prix(
         texte_prix = None
         for selecteur_prix in selecteurs_prix:
             try:
-                texte_prix = await page.locator(selecteur_prix).first.inner_text(timeout=5000)
-                if texte_prix.strip():
+                element_prix = page.locator(selecteur_prix).first
+                texte_prix = await element_prix.get_attribute("content")
+                if not texte_prix:
+                    texte_prix = await element_prix.inner_text(timeout=5000)
+                if extraire_prix(texte_prix) is not None:
                     break
             except PlaywrightTimeoutError:
                 continue
