@@ -1,0 +1,49 @@
+# -----------------------------------------------------------------------
+# Configuration des sites à scraper.
+# Pour ajouter un nouveau site : copier un bloc, changer les valeurs.
+# Aucun code Python à toucher.
+#
+# selecteur_resultat   : sélectionne CHAQUE carte produit dans les résultats
+#                        de recherche
+# selecteur_lien       : lien vers la fiche produit, RELATIF à selecteur_resultat
+# selecteur_prix_fiche : sélecteur du prix SUR LA FICHE PRODUIT (pas sur la
+#                        liste de résultats, pour éviter les erreurs)
+# selecteur_ref_fiche  : sélecteur où la référence est affichée SUR LA FICHE,
+#                        pour vérifier qu'on a bien la bonne pièce
+# attendre_selecteur   : sélecteur à attendre avant de considérer la page
+#                        chargée (utile pour les sites en JS lourd)
+# -----------------------------------------------------------------------
+
+sites:
+
+  # ---------------------------------------------------------------------
+  # Sélecteurs vérifiés sur la page de recherche et la fiche produit.
+  # Vérifie tout de même les CGU et le robots.txt avant un usage fréquent.
+  # ---------------------------------------------------------------------
+  - nom: "dgjauto"
+    url_recherche: "https://www.dgjauto.fr/fr/module/ambjolisearch/jolisearch?s={ref}"
+    selecteur_resultat: "article.product-miniature.js-product-miniature"
+    selecteur_lien: "a.card-img-top"
+    attendre_selecteur: "article.product-miniature.js-product-miniature"
+    selecteur_prix_fiche: ".product-prices .text-accent"
+    selecteur_ref_fiche: ".list-unstyled li:nth-child(2) .text-right"
+    actif: true
+
+  - nom: "distriauto"
+    url_recherche: "https://www.distriauto.fr/pieces-auto/recherche?q={ref}"
+    selecteur_resultat: ".product-list-item"
+    selecteur_lien: "a.font-inherit"
+    attendre_selecteur: ".product-list-item"
+    selecteur_prix_fiche: ".product-top__price__bloc .price__amount"
+    selecteur_ref_fiche: "span.product__reference"
+    actif: true
+
+  - nom: "pieceauto_discount"
+    url_recherche: "https://www.pieceauto-discount.com/"
+    selecteur_champ_recherche: ".ais-SearchBox-input"
+    selecteur_resultat: ".bloqueProducto"
+    selecteur_lien: ".enlaceProducto"
+    attendre_selecteur: ".bloqueProducto"
+    selecteur_prix_fiche: ".price-current"
+    selecteur_ref_fiche: "h2.product-meta"
+    actif: true

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PriceBot | Comparateur de pièces</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="PriceBot accueil">
+        <span class="brand-mark">PB</span>
+        <span>PriceBot</span>
+      </a>
+      <span class="status"><i></i> Recherche multi-sites</span>
+    </header>
+
+    <section class="intro">
+      <p class="eyebrow">Pièces auto, prix nets</p>
+      <h1>Trouve la bonne pièce<br><em>au meilleur prix.</em></h1>
+      <p class="lede">Référence, numéro OE ou nom de pièce. Compare les offres disponibles en quelques secondes.</p>
+    </section>
+
+    <form class="search-panel" id="search-form">
+      <label class="search-field">
+        <span>Référence ou pièce</span>
+        <input id="recherche" name="recherche" type="text" placeholder="Ex. WK6037 ou filtre à air Audi" autocomplete="off" required>
+      </label>
+      <label class="search-field brand-field">
+        <span>Marque <small>optionnel</small></span>
+        <input id="marque" name="marque" type="text" placeholder="Ex. NGK">
+      </label>
+      <button type="submit" class="search-button"><span>Comparer</span><b>→</b></button>
+    </form>
+
+    <p class="hint">La marque filtre les résultats sans modifier la recherche principale.</p>
+
+    <section class="results-section" aria-live="polite">
+      <div class="results-heading">
+        <div>
+          <p class="eyebrow">Résultats</p>
+          <h2 id="results-title">Prêt à comparer</h2>
+        </div>
+        <span id="result-count" class="result-count"></span>
+      </div>
+
+      <div id="feedback" class="feedback" hidden></div>
+      <div id="best-result" class="best-result" hidden></div>
+      <div id="results" class="results-list"></div>
+    </section>
+  </main>
+
+  <script>
+    const form = document.querySelector('#search-form');
+    const button = form.querySelector('button');
+    const results = document.querySelector('#results');
+    const feedback = document.querySelector('#feedback');
+    const bestResult = document.querySelector('#best-result');
+    const title = document.querySelector('#results-title');
+    const count = document.querySelector('#result-count');
+
+    function euro(prix) {
+      return prix === null ? 'Indisponible' : `${Number(prix).toFixed(2)} €`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;', '"':'&quot;'}[char]));
+    }
+
+    function renderCard(resultat) {
+      const detail = resultat.erreur || (resultat.confirmee ? 'Référence confirmée' : 'Référence non confirmée');
+      const link = resultat.url && resultat.url.startsWith('http')
+        ? `<a href="${escapeHtml(resultat.url)}" target="_blank" rel="noreferrer">Voir la fiche ↗</a>` : '';
+      return `<article class="result-card ${resultat.prix !== null && resultat.confirmee ? 'is-valid' : ''}">
+        <div class="site-dot"></div>
+        <div class="result-main"><h3>${escapeHtml(resultat.site)}</h3><p>${escapeHtml(detail)}</p></div>
+        <strong class="price">${euro(resultat.prix)}</strong>
+        ${link}
+      </article>`;
+    }
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const recherche = document.querySelector('#recherche').value.trim();
+      const marque = document.querySelector('#marque').value.trim();
+      if (!recherche) return;
+
+      button.disabled = true;
+      button.querySelector('span').textContent = 'Recherche…';
+      feedback.hidden = true;
+      bestResult.hidden = true;
+      results.innerHTML = '';
+      title.textContent = 'Recherche en cours';
+      count.textContent = '';
+
+      try {
+        const response = await fetch('/api/recherche', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({recherche, marque})
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.erreur || 'Erreur inattendue');
+
+        title.textContent = `Résultats pour « ${recherche} »`;
+        count.textContent = `${data.resultats.length} site(s)`;
+        if (data.meilleur) {
+          bestResult.innerHTML = `<span class="best-label">Meilleure offre</span><strong>${euro(data.meilleur.prix)}</strong><span>chez ${escapeHtml(data.meilleur.site)}</span>`;
+          bestResult.hidden = false;
+        }
+        results.innerHTML = data.resultats.map(renderCard).join('');
+      } catch (error) {
+        feedback.textContent = error.message;
+        feedback.hidden = false;
+        title.textContent = 'Recherche impossible';
+      } finally {
+        button.disabled = false;
+        button.querySelector('span').textContent = 'Comparer';
+      }
+    });
+  </script>
+</body>
+</html>
