@@ -73,11 +73,16 @@ async def chercher_prix(
                 await page.wait_for_selector(
                     attendre, timeout=site_config.get("timeout_selecteur_ms", 30000)
                 )
-            except Exception:
+            except PlaywrightTimeoutError:
+                titre = await page.title()
+                texte_page = (await page.locator("body").inner_text())[:180].strip()
                 return ResultatPrix(
                     site=nom, ref_demandee=recherche, prix=None, devise="EUR",
                     url_produit=url_recherche, ref_confirmee=False,
-                    erreur="Aucun résultat trouvé (timeout sélecteur résultats)",
+                    erreur=(
+                        "Sélecteur résultats absent après attente"
+                        f" (page: {titre or 'sans titre'}; {texte_page})"
+                    ),
                 )
 
         resultats = page.locator(site_config["selecteur_resultat"])

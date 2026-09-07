@@ -27,8 +27,8 @@ sites:
     attendre_selecteur: "article.product-miniature.js-product-miniature"
     selecteur_prix_fiche: ".product-prices .text-accent"
     selecteur_ref_fiche: ".list-unstyled li:nth-child(2) .text-right"
-    timeout_navigation_ms: 35000
-    timeout_selecteur_ms: 15000
+    timeout_navigation_ms: 60000
+    timeout_selecteur_ms: 45000
     actif: true
 
   - nom: "distriauto"
@@ -38,8 +38,8 @@ sites:
     attendre_selecteur: ".product-list-item"
     selecteur_prix_fiche: ".product-top__price__bloc .price__amount"
     selecteur_ref_fiche: "span.product__reference"
-    timeout_navigation_ms: 35000
-    timeout_selecteur_ms: 15000
+    timeout_navigation_ms: 60000
+    timeout_selecteur_ms: 45000
     actif: true
 
   - nom: "pieceauto_discount"
