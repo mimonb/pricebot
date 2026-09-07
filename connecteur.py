@@ -159,7 +159,13 @@ async def chercher_prix(
                 else:
                     ref_confirmee = ref_correspond(recherche, texte_ref)
             except Exception:
-                ref_confirmee = False  # pas trouvé -> on ne peut pas garantir
+                ref_confirmee = False
+
+        # Certains sites changent le bloc de référence selon la région ou le
+        # rendu cloud. Le texte complet reste un garde-fou exact.
+        if not recherche_descriptive and not ref_confirmee:
+            texte_fiche = await page.locator("body").inner_text(timeout=5000)
+            ref_confirmee = ref_correspond(recherche, texte_fiche)
 
         if not ref_confirmee:
             return ResultatPrix(
