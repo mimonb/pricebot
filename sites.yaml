@@ -36,7 +36,8 @@ sites:
     selecteur_resultat: ".product-list-item"
     selecteur_lien: "a.font-inherit"
     attendre_selecteur: ".product-list-item"
-    selecteur_prix_fiche: ".product-top__price__bloc .price__amount"
+    selecteur_prix_fiche: ".product-top__price__bloc--best .price__amount"
+    selecteur_prix_fiche_secours: ".product-top__price__bloc .price__amount"
     selecteur_ref_fiche: "span.product__reference"
     timeout_navigation_ms: 60000
     timeout_selecteur_ms: 45000

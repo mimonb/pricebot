@@ -48,7 +48,12 @@ async def chercher_prix(
     4. Vérifie que la référence affichée correspond
     5. Extrait le prix
     """
-    from normalizer import normaliser_texte, recherche_par_nom_correspond, ref_correspond
+    from normalizer import (
+        normaliser_ref,
+        normaliser_texte,
+        recherche_par_nom_correspond,
+        ref_correspond,
+    )
 
     nom = site_config["nom"]
     valeur_url = quote_plus(recherche.strip())
@@ -94,23 +99,37 @@ async def chercher_prix(
                 erreur="Aucun résultat sur la page de recherche",
             )
 
-        # Avec une marque, choisir le premier résultat dont la carte la contient.
+        # Pour une référence, éviter un équivalent placé avant la référence exacte.
         premier = resultats.first
+        if not recherche_descriptive:
+            recherche_norm = normaliser_ref(recherche)
+            for index in range(nb):
+                candidat = resultats.nth(index)
+                texte_carte = await candidat.inner_text()
+                if recherche_norm in normaliser_ref(texte_carte):
+                    premier = candidat
+                    break
+
+        # Avec une marque, choisir le premier résultat qui contient la marque.
         if marque:
             marque_norm = normaliser_texte(marque)
-            premier = None
+            resultat_marque = None
             for index in range(nb):
                 candidat = resultats.nth(index)
                 texte_carte = normaliser_texte(await candidat.inner_text())
-                if marque_norm in texte_carte:
-                    premier = candidat
+                reference_ok = recherche_descriptive or recherche_norm in normaliser_ref(
+                    await candidat.inner_text()
+                )
+                if reference_ok and marque_norm in texte_carte:
+                    resultat_marque = candidat
                     break
-            if premier is None:
+            if resultat_marque is None:
                 return ResultatPrix(
                     site=nom, ref_demandee=recherche, prix=None, devise="EUR",
                     url_produit=url_recherche, ref_confirmee=False,
                     erreur=f"Aucun résultat pour la marque : {marque}",
                 )
+            premier = resultat_marque
 
         lien = premier.locator(site_config["selecteur_lien"]).first
         href = await lien.get_attribute("href")
@@ -143,7 +162,19 @@ async def chercher_prix(
                 ref_confirmee = False  # pas trouvé -> on ne peut pas garantir
 
         # extraire le prix
-        texte_prix = await page.locator(site_config["selecteur_prix_fiche"]).first.inner_text(timeout=8000)
+        selecteurs_prix = [site_config["selecteur_prix_fiche"]]
+        selecteur_secours = site_config.get("selecteur_prix_fiche_secours")
+        if selecteur_secours:
+            selecteurs_prix.append(selecteur_secours)
+
+        texte_prix = None
+        for selecteur_prix in selecteurs_prix:
+            try:
+                texte_prix = await page.locator(selecteur_prix).first.inner_text(timeout=5000)
+                if texte_prix.strip():
+                    break
+            except PlaywrightTimeoutError:
+                continue
         prix = extraire_prix(texte_prix)
 
         return ResultatPrix(
