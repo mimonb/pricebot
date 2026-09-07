@@ -38,6 +38,7 @@ async def comparer_prix(
                 )
             )
             try:
+                await page.route("**/*", filtrer_ressource)
                 return await chercher_prix(page, site_config, recherche, marque)
             finally:
                 await page.close()
@@ -52,6 +53,23 @@ async def comparer_prix(
         return (0 if valide else 1, r.prix if r.prix is not None else float("inf"))
 
     return sorted(resultats, key=cle_tri)
+
+
+async def filtrer_ressource(route):
+    """Ignore les ressources visuelles et trackers inutiles au scraping."""
+    requete = route.request
+    if requete.resource_type in {"image", "font", "media"}:
+        await route.abort()
+        return
+    if any(domaine in requete.url for domaine in (
+        "google-analytics.com",
+        "googletagmanager.com",
+        "doubleclick.net",
+        "facebook.net",
+    )):
+        await route.abort()
+        return
+    await route.continue_()
 
 
 def afficher_resultats(resultats: List[ResultatPrix]):

@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Optional
 from urllib.parse import quote_plus
 
-from playwright.async_api import Page
+from playwright.async_api import Page, TimeoutError as PlaywrightTimeoutError
 
 
 @dataclass
@@ -56,21 +56,23 @@ async def chercher_prix(
     recherche_descriptive = any(c.isspace() for c in recherche.strip()) or len(recherche.split()) > 1
 
     try:
-        await page.goto(url_recherche, timeout=20000, wait_until="domcontentloaded")
+        await naviguer(page, url_recherche, site_config)
 
         champ_recherche = site_config.get("selecteur_champ_recherche")
         if champ_recherche:
             champ = page.locator(champ_recherche)
             await champ.fill("")
             await champ.press_sequentially(recherche, delay=30)
-            await page.wait_for_timeout(1500)
+            await page.wait_for_timeout(700)
 
         # attendre que les résultats apparaissent (site en JS lourd sinon la
         # page est encore vide au moment du scraping)
         attendre = site_config.get("attendre_selecteur")
         if attendre:
             try:
-                await page.wait_for_selector(attendre, timeout=10000)
+                await page.wait_for_selector(
+                    attendre, timeout=site_config.get("timeout_selecteur_ms", 30000)
+                )
             except Exception:
                 return ResultatPrix(
                     site=nom, ref_demandee=recherche, prix=None, devise="EUR",
@@ -119,7 +121,7 @@ async def chercher_prix(
             base = re.match(r"https?://[^/]+", url_recherche).group(0)
             href = base + href
 
-        await page.goto(href, timeout=20000, wait_until="domcontentloaded")
+        await naviguer(page, href, site_config)
 
         # Vérifier la référence/OE ou les mots du nom demandé sur la fiche.
         ref_confirmee = True
@@ -151,3 +153,14 @@ async def chercher_prix(
             url_produit=url_recherche, ref_confirmee=False,
             erreur=f"{type(e).__name__}: {e}",
         )
+
+
+async def naviguer(page: Page, url: str, site_config: dict):
+    """Navigue sans attendre les ressources secondaires lentes des sites."""
+    timeout = site_config.get("timeout_navigation_ms", 60000)
+    try:
+        await page.goto(url, timeout=timeout, wait_until="commit")
+    except PlaywrightTimeoutError:
+        # Une réponse peut avoir livré le DOM utile malgré des ressources lentes.
+        if not site_config.get("selecteur_resultat"):
+            raise
